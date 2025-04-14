@@ -326,9 +326,24 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 			cell.text1.autocapitalizationType = .none
 			cell.text1.spellCheckingType = .no
 			cell.text2.defaultInputAccessoryView = prevNextToolbar
+            cell.isSet.backgroundColor = kv.k == "" || kv.v == "" ? nil : UIColor.systemBlue
 
-			cell.isSet.backgroundColor = kv.k == "" || kv.v == "" ? nil : UIColor.systemBlue
+            cell.accessoryType = .none
+            
+            if tableView.isEditing {
+                let bgView = UIView()
+                bgView.backgroundColor = .clear
+                cell.selectedBackgroundView = bgView
+                
+                if let selectedIndexPaths = tableView.indexPathsForSelectedRows,
+                   selectedIndexPaths.contains(indexPath) {
+                    cell.accessoryType = .checkmark
+                }
+            } else {
+                cell.selectionStyle = .default
+            }
 			return cell
+            
 		} else if indexPath.section == 1 {
 			// Relations
 			if indexPath.row == relations.count {
@@ -472,12 +487,22 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 		let editing = !tableView.isEditing
 		navigationItem.leftBarButtonItem?.isEnabled = !editing
 		navigationItem.rightBarButtonItem?.isEnabled = !editing && tabController.isTagDictChanged()
-		tableView.setEditing(editing, animated: true)
+		
+        if editing {
+            tableView.allowsMultipleSelectionDuringEditing = true
+            tableView.setEditing(editing, animated: true)
+        } else {
+            tableView.setEditing(editing, animated: true)
+        }
+        
 		let button = sender as? UIBarButtonItem
 		button?.title = editing ? NSLocalizedString("Done", comment: "") : NSLocalizedString("Edit", comment: "")
 		button?.style = editing ? .done : .plain
+        
+        // Force reload all visible cells to update selection appearance
+        tableView.reloadData()
 	}
-
+    
 	// Don't allow deleting the "Add Tag" row
 	override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
 		if indexPath.section == 0 {
@@ -493,6 +518,22 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 			}
 		}
 	}
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if tableView.isEditing && indexPath.section == 0 {
+            if let cell = tableView.cellForRow(at: indexPath) {
+                cell.accessoryType = .checkmark
+            }
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+        if tableView.isEditing && indexPath.section == 0 {
+            if let cell = tableView.cellForRow(at: indexPath) {
+                cell.accessoryType = .none
+            }
+        }
+    }
 
 	override func tableView(_ tableView: UITableView,
 	                        commit editingStyle: UITableViewCell.EditingStyle,
