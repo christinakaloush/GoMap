@@ -80,6 +80,7 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 	private var currentFeature: PresetFeature?
 	internal var currentTextField: UITextField?
 	private var prevNextToolbar: UIToolbar!
+    var checkedTagKeys = Set<String>()
 
 	override func viewDidLoad() {
 		tags = KeyValueTableSection(tableView: tableView)
@@ -326,8 +327,6 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 			cell.text1.autocapitalizationType = .none
 			cell.text1.spellCheckingType = .no
 			cell.text2.defaultInputAccessoryView = prevNextToolbar
-            cell.isSet.backgroundColor = kv.k == "" || kv.v == "" ? nil : UIColor.systemBlue
-
             cell.accessoryType = .none
             
             if tableView.isEditing {
@@ -335,12 +334,13 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
                 bgView.backgroundColor = .clear
                 cell.selectedBackgroundView = bgView
                 
-                if let selectedIndexPaths = tableView.indexPathsForSelectedRows,
-                   selectedIndexPaths.contains(indexPath) {
+                let tagKey = tags[indexPath.row].k
+                if checkedTagKeys.contains(tagKey) {
                     cell.accessoryType = .checkmark
+                    cell.selectionStyle = .blue
+                } else {
+                    cell.selectionStyle = .default
                 }
-            } else {
-                cell.selectionStyle = .default
             }
 			return cell
             
@@ -490,16 +490,15 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 		
         if editing {
             tableView.allowsMultipleSelectionDuringEditing = true
-            tableView.setEditing(editing, animated: true)
-        } else {
-            tableView.setEditing(editing, animated: true)
         }
+        
+        tableView.setEditing(editing, animated: true)
+
         
 		let button = sender as? UIBarButtonItem
 		button?.title = editing ? NSLocalizedString("Done", comment: "") : NSLocalizedString("Edit", comment: "")
 		button?.style = editing ? .done : .plain
         
-        // Force reload all visible cells to update selection appearance
         tableView.reloadData()
 	}
     
@@ -520,18 +519,12 @@ class POIAllTagsViewController: UITableViewController, POIFeaturePickerDelegate,
 	}
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if tableView.isEditing && indexPath.section == 0 {
-            if let cell = tableView.cellForRow(at: indexPath) {
-                cell.accessoryType = .checkmark
-            }
-        }
-    }
-
-    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        if tableView.isEditing && indexPath.section == 0 {
-            if let cell = tableView.cellForRow(at: indexPath) {
-                cell.accessoryType = .none
-            }
+        let tagKey = tags[indexPath.row].k
+        
+        if checkedTagKeys.contains(tagKey) {
+            checkedTagKeys.remove(tagKey)
+        } else {
+            checkedTagKeys.insert(tagKey)
         }
     }
 
